@@ -19,6 +19,6 @@ Advance c learning for system driver development & reverse engineering
 
 - On execute `python windows_reverse_tcp_shell.py` on client/victim machine it will spawn cmd.exe shell to victim, Bang!
 
-## POC video
+## POC Screenshot
 
-[![Watch the video](windows_reverse_tcp_shell.PNG)](<video controls src="https://github.com/lpkapil/learning_python_advance/blob/main/windows_reverse_tcp_shell.mp4" title="windows_reverse_tcp_shell.mp4"></video>)
+[![POC](windows_reverse_tcp_shell.PNG)]
