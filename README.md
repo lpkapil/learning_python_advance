@@ -1,6 +1,6 @@
 # advance_python_learning
 
-Advance c learning for system driver development & reverse engineering
+Advance python learning for system driver development & reverse engineering
 
 ## Topics
 
