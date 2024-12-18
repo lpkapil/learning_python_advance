@@ -2,7 +2,6 @@ import os
 import json
 import threading
 from typing import List, Dict, Any
-import time
 from datetime import datetime
 
 
@@ -12,7 +11,6 @@ class Database:
         self.lock = threading.Lock()
         self.tables = {}
         self._init_db()
-        self.cache = {}
 
     def _init_db(self):
         """Initialize the database with the required files."""
@@ -92,7 +90,6 @@ class Table:
         self.columns = columns
         self.primary_key = primary_key
         self.records = []
-        self.indexes = {}
         self.load()
 
     def load(self):
@@ -100,7 +97,8 @@ class Table:
         table_file = os.path.join(self.db.db_name, f"{self.table_name}.json")
         if os.path.exists(table_file):
             with open(table_file, 'r') as f:
-                self.records = json.load(f)
+                table_data = json.load(f)
+                self.records = table_data.get('records', [])
 
     def save(self):
         """Save table data to JSON file."""
@@ -152,25 +150,37 @@ class Table:
         self.records = [row for row in self.records if not all(row[key] == value for key, value in condition.items())]
         self.save()
 
-    def create_index(self, column: str):
-        """Create an index on a column."""
-        if column not in self.columns:
-            raise ValueError(f"Column '{column}' not found in table.")
-        self.indexes[column] = {}
-        for idx, row in enumerate(self.records):
-            key = row[column]
-            self.indexes[column][key] = idx
-
-    def show(self):
-        """Display the table content."""
-        for row in self.records:
-            print(row)
-
     def drop(self):
-        """Drop the table data and index."""
+        """Drop the table data."""
         table_file = os.path.join(self.db.db_name, f"{self.table_name}.json")
         if os.path.exists(table_file):
             os.remove(table_file)
+        self.records = []  # Clear in-memory data
+
+
+class MultiThreadedDatabase(Database):
+    def __init__(self, db_name: str):
+        super().__init__(db_name)
+
+    def execute_query(self, query: str):
+        """Execute a SQL query."""
+        parsed_query = SQLParser.parse_query(query)
+        table = self.get_table(parsed_query["table"])
+
+        if parsed_query["type"] == "select":
+            condition = eval(parsed_query["condition"]) if parsed_query["condition"] else None
+            results = table.select(condition)
+            return results
+        elif parsed_query["type"] == "insert":
+            values = eval(parsed_query["values"])
+            table.insert(values)
+        elif parsed_query["type"] == "update":
+            set_values = eval(parsed_query["set"])
+            condition = eval(parsed_query["condition"]) if parsed_query["condition"] else None
+            table.update(condition, set_values)
+        elif parsed_query["type"] == "delete":
+            condition = eval(parsed_query["condition"]) if parsed_query["condition"] else None
+            table.delete(condition)
 
 
 class SQLParser:
@@ -226,62 +236,3 @@ class SQLParser:
         table_name = parts[0].strip()
         condition = parts[1].strip() if len(parts) > 1 else None
         return {"type": "delete", "table": table_name, "condition": condition}
-
-
-class MultiThreadedDatabase(Database):
-    def __init__(self, db_name: str):
-        super().__init__(db_name)
-        self.lock = threading.Lock()
-
-    def execute_query(self, query: str):
-        """Execute a SQL query."""
-        parsed_query = SQLParser.parse_query(query)
-        table = self.get_table(parsed_query["table"])
-
-        if parsed_query["type"] == "select":
-            condition = eval(parsed_query["condition"]) if parsed_query["condition"] else None
-            results = table.select(condition)
-            return results
-        elif parsed_query["type"] == "insert":
-            values = eval(parsed_query["values"])
-            table.insert(values)
-        elif parsed_query["type"] == "update":
-            set_values = eval(parsed_query["set"])
-            condition = eval(parsed_query["condition"]) if parsed_query["condition"] else None
-            table.update(condition, set_values)
-        elif parsed_query["type"] == "delete":
-            condition = eval(parsed_query["condition"]) if parsed_query["condition"] else None
-            table.delete(condition)
-
-
-# Example Usage
-if __name__ == "__main__":
-    db = MultiThreadedDatabase("test_db")
-
-    # Create table
-    db.create_table("users", ["id", "name", "age", "created_at"], primary_key="id")
-
-    # Insert some data
-    users_table = db.get_table("users")
-    users_table.insert({"id": 1, "name": "Alice", "age": 30, "created_at": str(datetime.now())})
-    users_table.insert({"id": 2, "name": "Bob", "age": 24, "created_at": str(datetime.now())})
-
-    # Query data
-    results = users_table.select({"age": 30})
-    print(f"Results: {results}")
-
-    # Backup the DB
-    db.backup()
-
-    # Update data
-    users_table.update({"id": 1}, {"name": "Alice Cooper"})
-    
-    # Query updated data
-    results = users_table.select({"id": 1})
-    print(f"Updated Results: {results}")
-
-    # Drop the table
-    db.drop_table("users")
-
-    # Restore from backup
-    db.restore()

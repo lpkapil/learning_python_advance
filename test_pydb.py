@@ -1,8 +1,6 @@
 import sys
 import os
 from datetime import datetime
-
-# Now import the MultiThreadedDatabase class
 from disk_db.pydb import MultiThreadedDatabase
 
 # Initialize the database
