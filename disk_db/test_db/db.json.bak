@@ -1,0 +1,25 @@
+{
+    "users": {
+        "columns": [
+            "id",
+            "name",
+            "age",
+            "created_at"
+        ],
+        "primary_key": "id",
+        "records": [
+            {
+                "id": 1,
+                "name": "Alice",
+                "age": 30,
+                "created_at": "2024-12-18 15:25:34.616697"
+            },
+            {
+                "id": 2,
+                "name": "Bob",
+                "age": 24,
+                "created_at": "2024-12-18 15:25:34.617673"
+            }
+        ]
+    }
+}
